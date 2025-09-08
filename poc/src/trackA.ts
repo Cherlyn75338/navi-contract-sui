@@ -21,7 +21,8 @@ const TARGET_MOD_SUBSTRINGS = [
 type AnyRecord = Record<string, any>;
 
 async function main() {
-  const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
+  const rpcUrl = process.env.SUI_RPC_URL || getFullnodeUrl('mainnet');
+  const client = new SuiClient({ url: rpcUrl });
 
   for (const pkg of PKGS) {
     try {

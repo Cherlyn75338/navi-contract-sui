@@ -22,9 +22,12 @@ const ENV = {
   LENDING_MODULE: process.env.POC_LENDING_MODULE || 'lending',
   ENTRY_DEPOSIT: process.env.POC_ENTRY_DEPOSIT || 'entry_deposit',
   ENTRY_WITHDRAW: process.env.POC_ENTRY_WITHDRAW || 'entry_withdraw',
+  INCENTIVE_ID: process.env.POC_INCENTIVE_ID || '',
+  INCV2_ID: process.env.POC_INCV2_ID || '',
 };
 
-const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
+const rpcUrl = process.env.SUI_RPC_URL || getFullnodeUrl('mainnet');
+const client = new SuiClient({ url: rpcUrl });
 
 async function getModule(pkg: string, module: string): Promise<AnyRecord | null> {
   try {
@@ -69,14 +72,11 @@ async function listPackageObjects(pkg: string) {
   const objs: any[] = [];
   let cursor: string | null = null;
   do {
-    const resp: any = await (client as any).call({
-      method: 'suix_queryObjects',
-      params: [
-        { filter: { Package: pkg }, options: { showType: true, showOwner: true, showContent: true } },
-        cursor,
-        100,
-      ],
-    });
+    const resp: any = await (client as any).call('suix_queryObjects', [
+      { filter: { Package: pkg }, options: { showType: true, showOwner: true, showContent: true } },
+      cursor,
+      100,
+    ]);
     objs.push(...(resp.data || []));
     cursor = resp.hasNextPage ? resp.nextCursor : null;
   } while (cursor);
@@ -127,40 +127,166 @@ async function main() {
     return;
   }
 
-  // Inventory objects in pool/storage packages
-  let poolObjs: any[] = [];
-  let storageObjs: any[] = [];
-  let incentiveObjs: any[] = [];
-  try { poolObjs = await listPackageObjects(poolPkg); } catch (e) { console.log('Pool object enumeration not available:', (e as Error).message); }
-  try { storageObjs = await listPackageObjects(storagePkg); } catch (e) { console.log('Storage object enumeration not available:', (e as Error).message); }
-  if (incentivePkg) {
-    try { incentiveObjs = await listPackageObjects(incentivePkg); } catch (e) { console.log('Incentive object enumeration not available:', (e as Error).message); }
+  // Attempt inventory by scanning recent tx blocks globally (objectChanges)
+  const pools: { objectId: string; type: string }[] = [];
+  const storages: { objectId: string; type: string }[] = [];
+  // Try event-based discovery for specific event types that include poolId
+  try {
+    const eventTypes = [
+      `${poolPkg}::pool::PoolWithdrawReserve`,
+      `${poolPkg}::pool::PoolDeposit`,
+      `${poolPkg}::pool::PoolWithdraw`,
+    ];
+    const foundIds = new Set<string>();
+    for (const et of eventTypes) {
+      let cursor: any = null;
+      const maxPages = 10;
+      for (let i = 0; i < maxPages; i++) {
+        const resp = await client.queryEvents({
+          query: { MoveEventType: et } as any,
+          cursor,
+          limit: 50,
+          order: 'descending',
+        });
+        for (const ev of (resp as AnyRecord).data || []) {
+          const pj = (ev as AnyRecord).parsedJson as AnyRecord;
+          if (!pj) continue;
+          const pid = (pj.poolId || pj.pool_id || pj.poolID) as string | undefined;
+          if (pid && pid.startsWith('0x')) foundIds.add(pid);
+        }
+        if (!(resp as AnyRecord).hasNextPage || !(resp as AnyRecord).nextCursor) break;
+        cursor = (resp as AnyRecord).nextCursor;
+      }
+    }
+    for (const id of foundIds) {
+      try {
+        const obj = await client.getObject({ id, options: { showType: true } });
+        const ty = obj.data?.type || '';
+        if (typeof ty === 'string' && ty.includes('::pool::Pool<')) pools.push({ objectId: id, type: ty });
+      } catch {}
+    }
+  } catch (e) {
+    console.log('Event-based discovery failed:', (e as Error).message);
+  }
+  // First try event-based discovery for pool ids with explicit poolId field
+  // Try scan by querying objects directly for StructType filters as a fallback
+  try {
+    const respPools: any = await (client as any).call('suix_queryObjects', [
+      { filter: { StructType: `${poolPkg}::pool::Pool` }, options: { showType: true } },
+      null,
+      1000,
+    ]);
+    for (const o of (respPools.data || [])) {
+      if (o.data?.type && typeof o.data.type === 'string' && o.data.type.includes('::pool::Pool<')) {
+        pools.push({ objectId: o.data.objectId, type: o.data.type });
+      }
+    }
+  } catch (e) {
+    console.log('StructType pool query failed:', (e as Error).message);
+  }
+  try {
+    let cursor: string | null = null;
+    const maxPages = 30;
+    for (let i = 0; i < maxPages; i++) {
+      const resp: any = await (client as any).queryTransactionBlocks({
+        options: { showObjectChanges: true },
+        cursor,
+        limit: 100,
+        order: 'descending',
+      });
+      for (const tx of (resp.data || [])) {
+        const changes: any[] = tx.objectChanges || [];
+        for (const ch of changes) {
+          if (ch.type === 'created' && typeof ch.objectType === 'string') {
+            if (poolPkg && ch.objectType.startsWith(`${poolPkg}::pool::Pool<`)) {
+              pools.push({ objectId: ch.objectId, type: ch.objectType });
+            }
+            if (storagePkg && ch.objectType === `${storagePkg}::storage::Storage`) {
+              storages.push({ objectId: ch.objectId, type: ch.objectType });
+            }
+          }
+        }
+      }
+      if (!resp.hasNextPage || !resp.nextCursor) break;
+      cursor = resp.nextCursor;
+      if (pools.length >= 50 && storages.length >= 5) break;
+    }
+  } catch (e) {
+    console.log('Recent tx scan failed:', (e as Error).message);
   }
 
-  const pools = poolObjs.filter((o) => typeof o.data?.type === 'string' && o.data.type.includes('::pool::Pool<'));
-  const storages = storageObjs.filter((o) => typeof o.data?.type === 'string' && o.data.type.endsWith('::storage::Storage'));
-  const incentives = (incentiveObjs || []).filter((o) => typeof o.data?.type === 'string' && o.data.type.endsWith('::incentive::Incentive'));
-  const incentivesV2 = (incentiveObjs || []).filter((o) => typeof o.data?.type === 'string' && o.data.type.endsWith('::incentive_v2::Incentive'));
-
-  console.log(`Pools found: ${pools.length}`);
-  console.log(`Storages found: ${storages.length}`);
-  console.log(`Incentive candidates: ${incentives.length}, IncentiveV2 candidates: ${incentivesV2.length}`);
+  console.log(`Pools found (by tx scan): ${pools.length}`);
+  console.log(`Storages found (by tx scan): ${storages.length}`);
 
   // Group pools by type arg T
   const groups = new Map<string, string[]>();
   for (const p of pools) {
-    const t = extractPoolTypeArg(p.data.type);
+    const t = extractPoolTypeArg(p.type);
     if (!t) continue;
     if (!groups.has(t)) groups.set(t, []);
-    groups.get(t)!.push(p.data.objectId);
+    groups.get(t)!.push(p.objectId);
   }
 
   if (groups.size > 0) {
     for (const [t, ids] of groups.entries()) {
-      console.log(`Pool<T=${t}> count=${ids.length}`);
+      console.log(`Pool<T=${t}> count=${ids.length} ids=${ids.join(',')}`);
     }
   } else {
-    console.log('No pools enumerated (RPC filtering by package may be unavailable on this node).');
+    console.log('No pools grouped by type (recent tx scan might be insufficient).');
+  }
+
+  // Additional discovery via MoveFunction filter on aggregator module
+  try {
+    const foundPools = new Set<string>();
+    const foundStorages = new Set<string>();
+    const foundInc = new Set<string>();
+    const foundIncV2 = new Set<string>();
+
+    const fnNames = [
+      ENV.ENTRY_DEPOSIT,
+      ENV.ENTRY_WITHDRAW,
+      'deposit',
+      'withdraw',
+      'borrow',
+      'repay',
+      'entry_borrow',
+      'entry_repay',
+      'entry_deposit_on_behalf_of_user',
+      'withdraw_with_account_cap',
+      'deposit_with_account_cap',
+    ];
+
+    for (const fn of fnNames) {
+      try {
+        const resp = await client.queryTransactionBlocks({
+          filter: { MoveFunction: { package: aggPkg, module: ENV.LENDING_MODULE, function: fn } } as any,
+          options: { showObjectChanges: true },
+          limit: 100,
+          order: 'descending',
+        });
+        for (const tx of (resp as AnyRecord).data || []) {
+          const changes: any[] = tx.objectChanges || [];
+          for (const ch of changes) {
+            if ((ch.type === 'created' || ch.type === 'mutated') && typeof ch.objectType === 'string') {
+              const ty = ch.objectType as string;
+              if (poolPkg && ty.startsWith(`${poolPkg}::pool::Pool<`)) foundPools.add(ch.objectId);
+              if (storagePkg && ty === `${storagePkg}::storage::Storage`) foundStorages.add(ch.objectId);
+              if (incentivePkg && ty === `${incentivePkg}::incentive::Incentive`) foundInc.add(ch.objectId);
+              if (incentivePkg && ty === `${incentivePkg}::incentive_v2::Incentive`) foundIncV2.add(ch.objectId);
+            }
+          }
+        }
+      } catch {}
+    }
+    if (foundPools.size > 0 || foundStorages.size > 0 || foundInc.size > 0 || foundIncV2.size > 0) {
+      console.log('Discovered via MoveFunction tx filter:');
+      if (foundPools.size > 0) console.log('  Pools:', Array.from(foundPools).join(','));
+      if (foundStorages.size > 0) console.log('  Storages:', Array.from(foundStorages).join(','));
+      if (foundInc.size > 0) console.log('  Incentive:', Array.from(foundInc).join(','));
+      if (foundIncV2.size > 0) console.log('  IncentiveV2:', Array.from(foundIncV2).join(','));
+    }
+  } catch (e) {
+    console.log('MoveFunction filter discovery failed:', (e as Error).message);
   }
 
   // Optional devInspect
@@ -173,48 +299,65 @@ async function main() {
   if (required.some((x) => !x)) {
     console.log('Missing one or more required env vars for devInspect:');
     console.log('  POC_SIGNER, POC_COIN_ID, POC_STORAGE_ID, POC_POOL_A, POC_POOL_B, POC_ASSET_ID, POC_COIN_TYPE');
-    console.log('Optionally POC_ORACLE_ID, POC_INC_ID, POC_INCV2_ID');
+    console.log('Optionally POC_ORACLE_ID, POC_INCENTIVE_ID, POC_INCV2_ID');
     return;
   }
 
   const tx = new TransactionBlock();
-  // entry_deposit<T>(clock, storage, pool, asset, coin<T>, amount, incentive, incentive_v2)
+  // Build args dynamically from ABI to match exact arity and types
+  const mod: AnyRecord = await client.getNormalizedMoveModule({ package: aggPkg, module: ENV.LENDING_MODULE }) as AnyRecord;
+  const fns: AnyRecord = mod.functions ?? mod.exposedFunctions ?? {};
+  const dep = fns[ENV.ENTRY_DEPOSIT];
+  const wdr = fns[ENV.ENTRY_WITHDRAW];
+  if (!dep || !wdr) {
+    console.log('Selected functions not found in module.');
+    return;
+  }
+
+  const buildArg = (p: any, ctx: 'deposit' | 'withdraw') => {
+    const unwrap = (x: any): any => (x.MutableReference || x.Reference || x);
+    const t = unwrap(p);
+    if (t.Struct && t.Struct.address === '0x2' && t.Struct.module === 'clock' && t.Struct.name === 'Clock') return tx.object('0x6');
+    if (t.Struct && t.Struct.module === 'storage' && t.Struct.name === 'Storage') return tx.object(ENV.STORAGE_ID);
+    if (t.Struct && t.Struct.module === 'pool' && t.Struct.name === 'Pool') return tx.object(ctx === 'deposit' ? ENV.POOL_A_ID : ENV.POOL_B_ID);
+    if (t.Struct && t.Struct.module === 'oracle' && t.Struct.name === 'PriceOracle') return tx.object(ENV.ORACLE_ID);
+    if (t.Struct && t.Struct.module === 'incentive' && t.Struct.name === 'Incentive') return tx.object(ENV.INCENTIVE_ID);
+    if (t.Struct && t.Struct.module === 'incentive_v2' && t.Struct.name === 'Incentive') return tx.object(ENV.INCV2_ID);
+    if (t.Struct && t.Struct.address === '0x2' && t.Struct.module === 'coin' && t.Struct.name === 'Coin') return tx.object(ENV.COIN_ID);
+    if (t === 'U8') return tx.pure(Number(ENV.ASSET_ID));
+    if (t === 'U64') return tx.pure(1);
+    if (t === 'Address') return tx.pure(ENV.SIGNER);
+    if (t.Struct && t.Struct.address === '0x2' && t.Struct.module === 'tx_context' && t.Struct.name === 'TxContext') return undefined; // implicit
+    return undefined;
+  };
+
+  const depArgs = (dep.parameters as any[]).map((p: any) => buildArg(p, 'deposit')).filter((x) => x !== undefined);
+  const wdrArgs = (wdr.parameters as any[]).map((p: any) => buildArg(p, 'withdraw')).filter((x) => x !== undefined);
+
+  // Validate presence of required external object IDs based on ABI
+  const needsOracle = (wdr.parameters as any[]).some((p: any) => (p.MutableReference || p.Reference || p)?.Struct?.module === 'oracle');
+  if (needsOracle && !ENV.ORACLE_ID) {
+    console.log('Withdraw requires oracle; set POC_ORACLE_ID.');
+    return;
+  }
+  const needsInc = (dep.parameters as any[]).some((p: any) => (p.MutableReference || p.Reference || p)?.Struct?.module === 'incentive');
+  if (needsInc && !ENV.INCENTIVE_ID) {
+    console.log('Deposit requires incentive; set POC_INCENTIVE_ID.');
+    return;
+  }
+  const needsIncV2 = (dep.parameters as any[]).some((p: any) => (p.MutableReference || p.Reference || p)?.Struct?.module === 'incentive_v2');
+  if (needsIncV2 && !ENV.INCV2_ID) {
+    console.log('Deposit requires incentive_v2; set POC_INCV2_ID.');
+    return;
+  }
+
   tx.moveCall({
     target: `${aggPkg}::${ENV.LENDING_MODULE}::${ENV.ENTRY_DEPOSIT}<${ENV.COIN_TYPE}>`,
-    arguments: [
-      tx.object('0x6'),
-      tx.object(ENV.STORAGE_ID),
-      tx.object(ENV.POOL_A_ID),
-      tx.pure(Number(ENV.ASSET_ID)),
-      tx.object(ENV.COIN_ID),
-      tx.pure(1), // minimal amount
-      ...(incentives.length > 0 ? [tx.object(incentives[0].data.objectId)] : []),
-      ...(incentivesV2.length > 0 ? [tx.object(incentivesV2[0].data.objectId)] : []),
-    ],
+    arguments: depArgs as any[],
   });
-
-  // entry_withdraw<T>(clock, oracle, storage, pool, asset, amount, to, incentive, incentive_v2)
-  const withdrawArgs: any[] = [
-    tx.object('0x6'),
-  ];
-  if (ENV.ORACLE_ID) withdrawArgs.push(tx.object(ENV.ORACLE_ID));
-  else if (oraclePkg) {
-    console.log('No POC_ORACLE_ID set; withdraw may fail without an oracle object.');
-    withdrawArgs.push(tx.object('0x0')); // placeholder will fail
-  }
-  withdrawArgs.push(
-    tx.object(ENV.STORAGE_ID),
-    tx.object(ENV.POOL_B_ID),
-    tx.pure(Number(ENV.ASSET_ID)),
-    tx.pure(1),
-    tx.pure(ENV.SIGNER),
-  );
-  if (incentives.length > 0) withdrawArgs.push(tx.object(incentives[0].data.objectId));
-  if (incentivesV2.length > 0) withdrawArgs.push(tx.object(incentivesV2[0].data.objectId));
-
   tx.moveCall({
     target: `${aggPkg}::${ENV.LENDING_MODULE}::${ENV.ENTRY_WITHDRAW}<${ENV.COIN_TYPE}>`,
-    arguments: withdrawArgs,
+    arguments: wdrArgs as any[],
   });
 
   const sim = await client.devInspectTransactionBlock({ transactionBlock: tx, sender: ENV.SIGNER });
