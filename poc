@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "rootDir": "src",
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
+
+{
+  "name": "navi-dt0-poc",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "list-mods": "ts-node src/list-mods.ts",
+    "find-objects": "ts-node src/find-objects.ts",
+    "snapshot": "ts-node src/snapshot.ts",
+    "ptb": "ts-node src/ptb.ts"
+  },
+  "dependencies": {
+    "@mysten/sui.js": "^0.52.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}
+
