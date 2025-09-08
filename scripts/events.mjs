@@ -5,6 +5,7 @@ const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 const PACKAGES = [
   '0x81c408448d0d57b3e371ea94de1d40bf852784d3e225de1e74acab3e8395c18f',
   '0x66aa3335901ce7e04b85ed6597ee42d4b479f7110bf98e8ebd474fa32a0027e1',
+  '0xd899cf7d2b5db716bd2cf55599fb0d5ee38a3061e7b6bb6eebf73fa5bc4c81ca',
 ];
 
 async function fetchAllEvents(moveEventType, limit = 1000) {
