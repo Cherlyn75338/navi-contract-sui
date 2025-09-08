@@ -1,7 +1,7 @@
-import { JsonRpcProvider, Connection, SuiObjectRef } from '@mysten/sui.js';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { FULLNODE } from './config.js';
 
-export const provider = new JsonRpcProvider(new Connection({ fullnode: FULLNODE }));
+export const provider = new SuiClient({ url: FULLNODE || getFullnodeUrl('mainnet') });
 
 export type NormalizedValue = {
   valueRaw: bigint; // amount * price at target^2 scale

@@ -3,7 +3,10 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "discover": "node --loader ts-node/esm src/discover.ts",
+    "trackA": "node --loader ts-node/esm src/trackA.ts",
+    "liq": "node --loader ts-node/esm src/liquidationCheck.ts"
   },
   "keywords": [],
   "author": "",
@@ -17,6 +20,7 @@
   "devDependencies": {
     "@types/node": "^24.3.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2"
   }
 }

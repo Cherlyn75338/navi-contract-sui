@@ -1,7 +1,7 @@
-import { JsonRpcProvider, Connection } from '@mysten/sui.js';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { FULLNODE, PLACEHOLDERS, PACKAGES } from './config.js';
 
-const provider = new JsonRpcProvider(new Connection({ fullnode: FULLNODE }));
+const provider = new SuiClient({ url: FULLNODE || getFullnodeUrl('mainnet') });
 
 function computeSeized(
   debtToCover: bigint,

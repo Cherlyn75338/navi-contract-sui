@@ -1,8 +1,8 @@
-import { JsonRpcProvider, Connection } from '@mysten/sui.js';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui.js/client';
 import { FULLNODE, PACKAGES, PLACEHOLDERS, ASSETS, BORROWERS } from './config.js';
 import { provider as sharedProvider, normalizeValue, getCoinDecimals, bigintFromU256Return, ratioDelta } from './utils.js';
 
-const provider = new JsonRpcProvider(new Connection({ fullnode: FULLNODE }));
+const provider = new SuiClient({ url: FULLNODE || getFullnodeUrl('mainnet') });
 
 type ValuationRow = {
   user: string;
