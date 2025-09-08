@@ -7,7 +7,7 @@ const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
 const params = {
   pkgLending: '0x81c408448d0d57b3e371ea94de1d40bf852784d3e225de1e74acab3e8395c18f',
   storageId: '0xbb4e2f4b6205c2e2a2db47aeb4f830796ec7c005f88537ee775986639bc442fe',
-  clockId: '0x6',
+  clockId: '0x0000000000000000000000000000000000000000000000000000000000000006',
   configId: '0x3672b2bf471a60c30a03325f104f92fb195c9d337ba58072dce764fe2aa5e2dc',
   poolId: '0xa3582097b4c57630046c0c49a88bfc6b202a3ec0a9db5597c31765f7563755a8',
   coinType: '0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC',
