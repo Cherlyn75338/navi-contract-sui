@@ -10,8 +10,7 @@ module lending_core::lending_core_edge_tests {
     use 0x2::test_scenario as ts;
     use 0x2::clock;
     use 0x2::coin;
-
-    struct TestCoin has copy, drop {}
+    use 0x2::sui::SUI;
 
     #[test]
     fun test_dynamic_utilization_denominator_zero_guard() {
@@ -26,20 +25,17 @@ module lending_core::lending_core_edge_tests {
 
         let clk = ts::take_shared<clock::Clock>(&s);
         let mut stor = ts::take_shared<storage::Storage>(&s);
-        let mut poo = ts::take_shared<pool::Pool<TestCoin>>(&s); // created during init_reserve
         let mut pr = ts::take_shared<oracle::PriceOracle>(&s);
         let stor_admin = ts::take_from_address<storage::StorageAdminCap>(&s, ts::sender(&s));
         let pool_admin = ts::take_from_address<pool::PoolAdminCap>(&s, ts::sender(&s));
         let oracle_admin = ts::take_from_address<oracle::OracleAdminCap>(&s, ts::sender(&s));
 
-        // create coin metadata for TestCoin with 9 decimals to match pool normalization
-        ts::next_tx(&s);
-        let meta = coin::create_currency<TestCoin>(ts::ctx_mut(&s));
-        coin::set_decimals<TestCoin>(&meta, 9);
+        // take shared metadata for SUI coin (decimals = 9)
+        let meta = ts::take_shared<coin::CoinMetadata<SUI>>(&s);
 
         // init reserve with zero cap ceilings large enough; borrow cap as ray, supply cap as u256
         ts::next_tx(&s);
-        storage::init_reserve<TestCoin>(
+        storage::init_reserve<SUI>(
             &stor_admin,
             &pool_admin,
             &clk,
@@ -78,7 +74,7 @@ module lending_core::lending_core_edge_tests {
         // cleanup shared objects and caps
         ts::return_shared(&s, clk);
         ts::return_shared(&s, stor);
-        ts::return_shared(&s, poo);
+        ts::return_shared(&s, meta);
         ts::return_shared(&s, pr);
         ts::return_to_address(&s, stor_admin, ts::sender(&s));
         ts::return_to_address(&s, pool_admin, ts::sender(&s));
@@ -98,17 +94,14 @@ module lending_core::lending_core_edge_tests {
 
         let clk = ts::take_shared<clock::Clock>(&s);
         let mut stor = ts::take_shared<storage::Storage>(&s);
-        let mut poo = ts::take_shared<pool::Pool<TestCoin>>(&s);
         let stor_admin = ts::take_from_address<storage::StorageAdminCap>(&s, ts::sender(&s));
         let pool_admin = ts::take_from_address<pool::PoolAdminCap>(&s, ts::sender(&s));
 
-        ts::next_tx(&s);
-        let meta = coin::create_currency<TestCoin>(ts::ctx_mut(&s));
-        coin::set_decimals<TestCoin>(&meta, 9);
+        let meta = ts::take_shared<coin::CoinMetadata<SUI>>(&s);
 
         // create reserve (no deposits -> total supply == 0)
         ts::next_tx(&s);
-        storage::init_reserve<TestCoin>(&stor_admin, &pool_admin, &clk, &mut stor, 0, false, 0x2::address::max(), ray_math::ray(), 0,0,0, ray_math::half_ray(), ray_math::half_ray(), ray_math::half_ray(), ray_math::half_ray(), ray_math::half_ray(), 0, 0, &meta, ts::ctx_mut(&s));
+        storage::init_reserve<SUI>(&stor_admin, &pool_admin, &clk, &mut stor, 0, false, 0x2::address::max(), ray_math::ray(), 0,0,0, ray_math::half_ray(), ray_math::half_ray(), ray_math::half_ray(), ray_math::half_ray(), ray_math::half_ray(), 0, 0, &meta, ts::ctx_mut(&s));
 
         let asset_id = 0u8;
         // Attempt to cumulate with non-zero accrual when total supply is 0; should not abort
@@ -117,7 +110,7 @@ module lending_core::lending_core_edge_tests {
 
         ts::return_shared(&s, clk);
         ts::return_shared(&s, stor);
-        ts::return_shared(&s, poo);
+        ts::return_shared(&s, meta);
         ts::end(s);
     }
 
