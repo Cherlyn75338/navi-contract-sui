@@ -78,11 +78,23 @@ async function main() {
   // Try discover CONFIG_ID from flash_loan::ConfigCreated events
   if (!CONFIG_ID) {
     try {
-      const ev = await client.queryEvents({ query: { MoveModule: { package: PKG_FLASH, module: 'flash_loan' } }, limit: 50 });
-      const cfg = ev.data.find((e) => e.type.endsWith('::flash_loan::ConfigCreated')) as any;
+      const ev = await client.queryEvents({ query: { MoveEventType: `${PKG_FLASH}::flash_loan::ConfigCreated` }, limit: 1000 });
+      const cfg = ev.data[0] as any;
       if (cfg && cfg.parsedJson && cfg.parsedJson.id) {
         CONFIG_ID = cfg.parsedJson.id as string;
         console.log(`Discovered Config id: ${CONFIG_ID}`);
+      }
+    } catch {}
+  }
+
+  // Try discover CONFIG_ID from AssetConfigCreated (has config_id field)
+  if (!CONFIG_ID) {
+    try {
+      const ev: any = await client.queryEvents({ query: { MoveEventType: `${PKG_FLASH}::flash_loan::AssetConfigCreated` }, limit: 1000 });
+      const found = (ev.data || []).find((e: any) => (e.parsedJson && (e.parsedJson as any).config_id));
+      if (found) {
+        CONFIG_ID = (found.parsedJson as any).config_id as string;
+        console.log(`Discovered Config id via AssetConfigCreated: ${CONFIG_ID}`);
       }
     } catch {}
   }
@@ -121,12 +133,29 @@ async function main() {
     if (POOL_ID) console.log(`Discovered via GraphQL Pool id: ${POOL_ID}`);
   }
 
+  // Try derive COIN_TYPE from POOL_ID's type
+  if (POOL_ID) {
+    try {
+      const obj = await client.getObject({ id: POOL_ID, options: { showType: true } });
+      const tp = (obj.data as any)?.type as string | undefined;
+      if (tp) {
+        const m = tp.match(/::pool::Pool<(.+)>$/);
+        if (m && m[1]) {
+          const parsedCoin = m[1];
+          if (!process.env.COIN_TYPE) {
+            console.log(`Derived COIN_TYPE from pool: ${parsedCoin}`);
+          }
+        }
+      }
+    } catch {}
+  }
+
   // Try discover STORAGE_ID & POOL_ID by scanning recent lending txs
-  async function discoverFrom(func: string) {
+  async function discoverFrom(module: string, func: string, limit = 50) {
     try {
       const txs = await client.queryTransactionBlocks({
-        filter: { MoveFunction: { package: PKG_LENDING, module: 'lending', function: func } },
-        limit: 20,
+        filter: { MoveFunction: { package: PKG_LENDING, module, function: func } },
+        limit,
         order: 'descending',
         options: { showObjectChanges: true },
       } as any);
@@ -154,13 +183,38 @@ async function main() {
   }
 
   if (!STORAGE_ID || !POOL_ID) {
-    await discoverFrom('deposit_coin');
+    await discoverFrom('lending', 'deposit_coin', 100);
   }
   if (!STORAGE_ID || !POOL_ID) {
-    await discoverFrom('repay_coin');
+    await discoverFrom('lending', 'repay_coin', 100);
   }
   if (!STORAGE_ID || !POOL_ID) {
-    await discoverFrom('withdraw_coin');
+    await discoverFrom('lending', 'withdraw_coin', 100);
+  }
+  // Manage creates config/asset; storage::init_reserve creates pools
+  if (!STORAGE_ID || !POOL_ID) {
+    await discoverFrom('storage', 'init_reserve', 100);
+  }
+  if (!CONFIG_ID) {
+    try {
+      const txs = await client.queryTransactionBlocks({
+        filter: { MoveFunction: { package: PKG_LENDING, module: 'manage', function: 'create_flash_loan_config' } },
+        limit: 50,
+        order: 'descending',
+        options: { showObjectChanges: true },
+      } as any);
+      for (const t of txs.data) {
+        const oc = (t.objectChanges || []) as any[];
+        for (const c of oc) {
+          const tp = (c as any).objectType as string | undefined;
+          if (tp && tp.endsWith('::flash_loan::Config')) {
+            CONFIG_ID = (c as any).objectId;
+            break;
+          }
+        }
+        if (CONFIG_ID) break;
+      }
+    } catch {}
   }
 
   // Try discover via direct flash_loan_with_ctx calls (best source)
@@ -198,6 +252,37 @@ async function main() {
           }
         }
         if (CONFIG_ID && POOL_ID) break;
+      }
+    } catch {}
+  }
+
+  // Try discover STORAGE_ID via flash_repay_with_ctx calls (storage is 2nd arg after clock)
+  if (!STORAGE_ID) {
+    try {
+      const txs = await client.queryTransactionBlocks({
+        filter: { MoveFunction: { package: PKG_LENDING, module: 'lending', function: 'flash_repay_with_ctx' } },
+        limit: 20,
+        order: 'descending',
+        options: { showInput: true },
+      } as any);
+      for (const t of txs.data) {
+        const txd: any = t;
+        const commands = txd.transaction?.data?.transaction?.kind === 'ProgrammableTransaction'
+          ? txd.transaction.data.transaction.commands
+          : [];
+        for (const cmd of commands || []) {
+          if (cmd.MoveCall && cmd.MoveCall.module === 'lending' && cmd.MoveCall.function === 'flash_repay_with_ctx') {
+            const args = cmd.MoveCall.arguments;
+            // expected: [clock, &mut storage, &mut pool, receipt, balance]
+            if (args && args.length >= 2) {
+              const a1 = args[1];
+              if (typeof a1 === 'object' && a1.Object && (a1.Object.SharedObject || a1.Object.ImmutableObject)) {
+                STORAGE_ID = (a1.Object.SharedObject?.objectId || a1.Object.ImmutableObject?.objectId);
+              }
+            }
+          }
+        }
+        if (STORAGE_ID) break;
       }
     } catch {}
   }
