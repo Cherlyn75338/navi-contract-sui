@@ -6,7 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "discover": "node --loader ts-node/esm src/discover.ts",
     "trackA": "node --loader ts-node/esm src/trackA.ts",
-    "liq": "node --loader ts-node/esm src/liquidationCheck.ts"
+    "liq": "node --loader ts-node/esm src/liquidationCheck.ts",
+    "auto": "node --loader ts-node/esm src/autoDiscover.ts",
+    "targeted": "node --loader ts-node/esm src/targeted.ts"
   },
   "keywords": [],
   "author": "",

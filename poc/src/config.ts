@@ -1,7 +1,10 @@
 export const PACKAGES = [
   '0x81c408448d0d57b3e371ea94de1d40bf852784d3e225de1e74acab3e8395c18f',
   '0x66aa3335901ce7e04b85ed6597ee42d4b479f7110bf98e8ebd474fa32a0027e1',
-  '0xc2d49bf5e75d2258ee5563efa527feb6155de7ac6f6bf025a23ee88cd12d5a83'
+  '0xc2d49bf5e75d2258ee5563efa527feb6155de7ac6f6bf025a23ee88cd12d5a83',
+  // Inferred from function parameter types
+  '0xd899cf7d2b5db716bd2cf55599fb0d5ee38a3061e7b6bb6eebf73fa5bc4c81ca',
+  '0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f'
 ];
 
 export type Placeholders = {

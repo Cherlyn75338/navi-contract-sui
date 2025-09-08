@@ -7,36 +7,23 @@ async function main() {
   for (const pkg of PACKAGES) {
     try {
       const modules: any = await (provider as any).getNormalizedMoveModulesByPackage({ package: pkg });
-      if (!modules) {
-        console.log(`Package ${pkg}: no modules response`);
-        continue;
+      const data = modules?.data ?? modules ?? {};
+      const names: string[] = [];
+      if (!Array.isArray(data) && typeof data === 'object') {
+        for (const name of Object.keys(data)) names.push(name);
+      } else if (Array.isArray(data)) {
+        for (const m of data) names.push(m.module?.name ?? '<unknown>');
       }
-      if (Array.isArray(modules)) {
-        console.log(`Package ${pkg} has ${modules.length} modules`);
-        for (const m of modules) {
-          const name = m.module?.name ?? '<unknown>';
-          console.log(`- module: ${name}`);
-          const fns = m.module?.exposedFunctions || [];
-          for (const f of fns) {
-            console.log(`  * fn ${f.name}`);
-          }
-        }
-      } else if (modules.data) {
-        console.log(`Package ${pkg} has ${modules.data.length} modules`);
-        for (const m of modules.data) {
-          const name = m.module?.name ?? '<unknown>';
-          console.log(`- module: ${name}`);
-          const fns = m.module?.exposedFunctions || [];
-          for (const f of fns) {
-            console.log(`  * fn ${f.name}`);
-          }
-        }
-      } else {
-        console.dir(modules, { depth: 4 });
+      console.log(`Package ${pkg} has ${names.length} modules`);
+      for (const name of names) {
+        console.log(`- module: ${name}`);
+        const mod = (data as any)[name];
+        const fnMap = mod?.exposedFunctions ?? {};
+        const fns = Object.keys(fnMap);
+        if (fns.length) for (const fn of fns) console.log(`  * fn ${fn}`);
       }
     } catch (e) {
-      console.error(`Failed to fetch modules for ${pkg}`);
-      console.dir(e, { depth: 5 });
+      console.error(`Failed to fetch modules for ${pkg}: ${String((e as Error).message || e)}`);
     }
   }
 }
