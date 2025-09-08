@@ -20,14 +20,14 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         };
         let (v5, v6) = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_pro::get_price_from_adaptor(v4, v3, arg3, arg4);
         let v7 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::strategy::is_oracle_price_fresh(v1, v6, v2);
-        let v8 = false;
-        let v9 = 0;
+        let mut v8 = false;
+        let mut v9 = 0;
         if (0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::is_secondary_oracle_available(v0)) {
             let (v10, v11) = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_pro::get_price_from_adaptor(0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_secondary_source_config(v0), v3, arg3, arg4);
             v9 = v10;
             v8 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::strategy::is_oracle_price_fresh(v1, v11, v2);
         };
-        let v12 = v5;
+        let mut v12 = v5;
         if (v7 && v8) {
             let v13 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::strategy::validate_price_difference(v5, v9, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_price_diff_threshold1_from_feed(v0), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_price_diff_threshold2_from_feed(v0), v1, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_max_duration_within_thresholds_from_feed(v0), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_diff_threshold2_timer_from_feed(v0));
             if (v13 != 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::level_normal()) {
