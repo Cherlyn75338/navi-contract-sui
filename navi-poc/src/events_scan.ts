@@ -13,19 +13,28 @@ type Row = {
   events: { type: string }[];
 };
 
-async function fetchTxs(func: string, limit = 50): Promise<Row[]> {
-  const res = await client.queryTransactionBlocks({
-    filter: { MoveFunction: { package: PKG, module: MODULE, function: func } },
-    options: { showEvents: true, showInput: true },
-    limit,
-    order: "descending",
-  });
-  return (res.data || []).map((tx: any) => ({
-    digest: tx.digest,
-    tsMs: Number((tx as any).timestampMs || 0),
-    func,
-    events: (tx.events || []).map((e: any) => ({ type: e.type as string })),
-  }));
+async function fetchTxs(func: string, want = 500): Promise<Row[]> {
+  const out: Row[] = [];
+  let cursor: string | null | undefined = undefined;
+  while (out.length < want) {
+    const res = await client.queryTransactionBlocks({
+      filter: { MoveFunction: { package: PKG, module: MODULE, function: func } },
+      options: { showEvents: true },
+      limit: 100,
+      order: "descending",
+      cursor,
+    });
+    const rows = (res.data || []).map((tx: any) => ({
+      digest: tx.digest,
+      tsMs: Number((tx as any).timestampMs || 0),
+      func,
+      events: (tx.events || []).map((e: any) => ({ type: e.type as string })),
+    }));
+    out.push(...rows);
+    if (!res.hasNextPage) break;
+    cursor = res.nextCursor;
+  }
+  return out;
 }
 
 function groupBySecond(rows: Row[]) {
@@ -42,7 +51,7 @@ function groupBySecond(rows: Row[]) {
 async function main() {
   const all: Row[] = [];
   for (const f of FUNCS) {
-    const rows = await fetchTxs(f, 100);
+    const rows = await fetchTxs(f, 1000);
     all.push(...rows);
   }
   all.sort((a, b) => a.tsMs - b.tsMs);
@@ -54,8 +63,10 @@ async function main() {
     const funcs = rows.map((r) => r.func);
     const evs = rows.flatMap((r) => r.events.map((e) => e.type));
     const interesting = evs.filter((t) => t.includes("storage") || t.includes("lending") || t.includes("incentive"));
-    console.log(`sec=${s} ${date} txs=${rows.length} funcs=${Array.from(new Set(funcs)).join(",")} events=${interesting.length}`);
-    for (const r of rows) console.log(`  ${r.func} ${r.digest} events=${r.events.length}`);
+    if (rows.length >= 2) {
+      console.log(`sec=${s} ${date} txs=${rows.length} funcs=${Array.from(new Set(funcs)).join(",")} events=${interesting.length}`);
+      for (const r of rows) console.log(`  ${r.func} ${r.digest} events=${r.events.length}`);
+    }
   }
 }
 
