@@ -1,11 +1,11 @@
 module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider {
-    struct OracleProviderConfig has store {
+    public struct OracleProviderConfig has store {
         provider: OracleProvider,
         enable: bool,
         pair_id: vector<u8>,
     }
     
-    struct OracleProvider has copy, drop, store {
+    public struct OracleProvider has copy, drop, store {
         name: 0x1::ascii::String,
     }
     
@@ -29,7 +29,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         OracleProvider{name: 0x1::ascii::string(b"")}
     }
     
-    public(friend) fun new_oracle_provider_config(arg0: OracleProvider, arg1: bool, arg2: vector<u8>) : OracleProviderConfig {
+    public(package) fun new_oracle_provider_config(arg0: OracleProvider, arg1: bool, arg2: vector<u8>) : OracleProviderConfig {
         OracleProviderConfig{
             provider : arg0, 
             enable   : arg1, 
@@ -41,11 +41,11 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         OracleProvider{name: 0x1::ascii::string(b"PythOracleProvider")}
     }
     
-    public(friend) fun set_enable_to_oracle_provider_config(arg0: &mut OracleProviderConfig, arg1: bool) {
+    public(package) fun set_enable_to_oracle_provider_config(arg0: &mut OracleProviderConfig, arg1: bool) {
         arg0.enable = arg1;
     }
     
-    public(friend) fun set_pair_id_to_oracle_provider_config(arg0: &mut OracleProviderConfig, arg1: vector<u8>) {
+    public(package) fun set_pair_id_to_oracle_provider_config(arg0: &mut OracleProviderConfig, arg1: vector<u8>) {
         arg0.pair_id = arg1;
     }
     

@@ -54,7 +54,7 @@ module lending_core::fuzz_dos_tests {
             i = i + 1;
         };
         st.reserves_count = 5;
-        let clk = clock::new_for_testing(0);
+        let clk = clock::create_for_testing(&mut tctx);
         // Should run without abort (bounded by reserves_count)
         logic::update_state_of_all(&clk, &mut st);
     }

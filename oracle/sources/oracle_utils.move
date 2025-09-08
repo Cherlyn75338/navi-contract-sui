@@ -23,29 +23,35 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
     
     public fun to_target_decimal_value(arg0: u256, arg1: u8, arg2: u8) : u256 {
         assert!(arg1 > 0 && arg2 > 0, 1);
-        while (arg1 != arg2) {
-            if (arg1 < arg2) {
-                arg0 = arg0 * 10;
-                arg1 = arg1 + 1;
+        let mut v = arg0;
+        let mut cur = arg1;
+        let tgt = arg2;
+        while (cur != tgt) {
+            if (cur < tgt) {
+                v = v * 10;
+                cur = cur + 1;
                 continue
             };
-            arg0 = arg0 / 10;
-            arg1 = arg1 - 1;
+            v = v / 10;
+            cur = cur - 1;
         };
-        arg0
+        v
     }
     
     public fun to_target_decimal_value_safe(arg0: u256, arg1: u64, arg2: u64) : u256 {
-        while (arg1 != arg2 && arg0 != 0) {
-            if (arg1 < arg2) {
-                arg0 = arg0 * 10;
-                arg1 = arg1 + 1;
+        let mut v = arg0;
+        let mut cur = arg1;
+        let tgt = arg2;
+        while (cur != tgt && v != 0) {
+            if (cur < tgt) {
+                v = v * 10;
+                cur = cur + 1;
                 continue
             };
-            arg0 = arg0 / 10;
-            arg1 = arg1 - 1;
+            v = v / 10;
+            cur = cur - 1;
         };
-        arg0
+        v
     }
     
     // decompiled from Move bytecode v6

@@ -1,26 +1,26 @@
 module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle {
-    struct OracleAdminCap has store, key {
+    public struct OracleAdminCap has store, key {
         id: 0x2::object::UID,
     }
     
-    struct OracleFeederCap has store, key {
+    public struct OracleFeederCap has store, key {
         id: 0x2::object::UID,
     }
     
-    struct PriceOracle has key {
+    public struct PriceOracle has key {
         id: 0x2::object::UID,
         version: u64,
         update_interval: u64,
         price_oracles: 0x2::table::Table<u8, Price>,
     }
     
-    struct Price has store {
+    public struct Price has store {
         value: u256,
         decimal: u8,
         timestamp: u64,
     }
     
-    struct PriceUpdated has copy, drop {
+    public struct PriceUpdated has copy, drop {
         price_oracle: address,
         id: u8,
         price: u256,
@@ -43,7 +43,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         let v0 = &arg1.price_oracles;
         assert!(0x2::table::contains<u8, Price>(v0, arg2), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::non_existent_oracle());
         let v1 = 0x2::table::borrow<u8, Price>(v0, arg2);
-        let v2 = false;
+        let mut v2 = false;
         if (v1.value > 0 && 0x2::clock::timestamp_ms(arg0) - v1.timestamp <= arg1.update_interval) {
             v2 = true;
         };
@@ -63,8 +63,28 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         };
         0x2::transfer::share_object<PriceOracle>(v2);
     }
+
+    #[test_only]
+    public fun admin_cap_for_testing(ctx: &mut 0x2::tx_context::TxContext): OracleAdminCap {
+        OracleAdminCap { id: 0x2::object::new(ctx) }
+    }
+
+    #[test_only]
+    public fun feeder_cap_for_testing(ctx: &mut 0x2::tx_context::TxContext): OracleFeederCap {
+        OracleFeederCap { id: 0x2::object::new(ctx) }
+    }
+
+    #[test_only]
+    public fun new_price_oracle_for_testing(ctx: &mut 0x2::tx_context::TxContext, update_interval: u64): PriceOracle {
+        PriceOracle {
+            id: 0x2::object::new(ctx),
+            version: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version(),
+            update_interval: update_interval,
+            price_oracles: 0x2::table::new<u8, Price>(ctx),
+        }
+    }
     
-    public(friend) fun oracle_version_migrate(arg0: &OracleAdminCap, arg1: &mut PriceOracle) {
+    public(package) fun oracle_version_migrate(arg0: &OracleAdminCap, arg1: &mut PriceOracle) {
         assert!(arg1.version <= 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version(), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::not_available_version());
         arg1.version = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version();
     }
@@ -97,7 +117,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         arg1.update_interval = arg2;
     }
     
-    public(friend) fun update_price(arg0: &0x2::clock::Clock, arg1: &mut PriceOracle, arg2: u8, arg3: u256) {
+    public(package) fun update_price(arg0: &0x2::clock::Clock, arg1: &mut PriceOracle, arg2: u8, arg3: u256) {
         version_verification(arg1);
         let v0 = &mut arg1.price_oracles;
         assert!(0x2::table::contains<u8, Price>(v0, arg2), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::non_existent_oracle());
@@ -129,7 +149,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         version_verification(arg2);
         let v0 = 0x1::vector::length<u8>(&arg3);
         assert!(v0 == 0x1::vector::length<u256>(&arg4), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_length_not_match());
-        let v1 = 0;
+        let mut v1 = 0;
         while (v1 < v0) {
             update_token_price(arg0, arg1, arg2, *0x1::vector::borrow<u8>(&arg3, v1), *0x1::vector::borrow<u256>(&arg4, v1));
             v1 = v1 + 1;

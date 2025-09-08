@@ -70,7 +70,7 @@ module lending_core::calc_util_interest_tests {
     #[test]
     fun test_dynamic_caculate_utilization_zero_when_borrow_zero() {
         let mut st = mk_storage_with_balances(100, 0);
-        let clk = clock::new_for_testing(0);
+        let clk = clock::create_for_testing(&mut tctx);
         let u = dynamic_calculator::dynamic_caculate_utilization(&clk, &mut st, 0, 0, 0, false);
         assert!(u == 0, 3);
     }

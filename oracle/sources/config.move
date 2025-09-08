@@ -1,5 +1,5 @@
 module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config {
-    struct OracleConfig has store, key {
+    public struct OracleConfig has store, key {
         id: 0x2::object::UID,
         version: u64,
         paused: bool,
@@ -7,7 +7,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         feeds: 0x2::table::Table<address, PriceFeed>,
     }
     
-    struct PriceFeed has store {
+    public struct PriceFeed has store, key {
         id: 0x2::object::UID,
         enable: bool,
         max_timestamp_diff: u64,
@@ -27,92 +27,92 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         history: History,
     }
     
-    struct History has copy, store {
+    public struct History has copy, store {
         price: u256,
         updated_time: u64,
     }
     
-    struct ConfigCreated has copy, drop {
+    public struct ConfigCreated has copy, drop {
         sender: address,
         id: address,
     }
     
-    struct ConfigSetPaused has copy, drop {
+    public struct ConfigSetPaused has copy, drop {
         config: address,
         value: bool,
         before_value: bool,
     }
     
-    struct PriceFeedCreated has copy, drop {
+    public struct PriceFeedCreated has copy, drop {
         sender: address,
         config: address,
         feed_id: address,
     }
     
-    struct PriceFeedSetEnable has copy, drop {
+    public struct PriceFeedSetEnable has copy, drop {
         config: address,
         feed_id: address,
         value: bool,
         before_value: bool,
     }
     
-    struct PriceFeedSetMaxTimestampDiff has copy, drop {
+    public struct PriceFeedSetMaxTimestampDiff has copy, drop {
         config: address,
         feed_id: address,
         value: u64,
         before_value: u64,
     }
     
-    struct PriceFeedSetPriceDiffThreshold1 has copy, drop {
+    public struct PriceFeedSetPriceDiffThreshold1 has copy, drop {
         config: address,
         feed_id: address,
         value: u64,
         before_value: u64,
     }
     
-    struct PriceFeedSetPriceDiffThreshold2 has copy, drop {
+    public struct PriceFeedSetPriceDiffThreshold2 has copy, drop {
         config: address,
         feed_id: address,
         value: u64,
         before_value: u64,
     }
     
-    struct PriceFeedSetMaxDurationWithinThresholds has copy, drop {
+    public struct PriceFeedSetMaxDurationWithinThresholds has copy, drop {
         config: address,
         feed_id: address,
         value: u64,
         before_value: u64,
     }
     
-    struct PriceFeedSetMaximumAllowedSpanPercentage has copy, drop {
+    public struct PriceFeedSetMaximumAllowedSpanPercentage has copy, drop {
         config: address,
         feed_id: address,
         value: u64,
         before_value: u64,
     }
     
-    struct PriceFeedSetMaximumEffectivePrice has copy, drop {
+    public struct PriceFeedSetMaximumEffectivePrice has copy, drop {
         config: address,
         feed_id: address,
         value: u256,
         before_value: u256,
     }
     
-    struct PriceFeedSetMinimumEffectivePrice has copy, drop {
+    public struct PriceFeedSetMinimumEffectivePrice has copy, drop {
         config: address,
         feed_id: address,
         value: u256,
         before_value: u256,
     }
     
-    struct PriceFeedSetOracleId has copy, drop {
+    public struct PriceFeedSetOracleId has copy, drop {
         config: address,
         feed_id: address,
         value: u8,
         before_value: u8,
     }
     
-    struct SetOracleProvider has copy, drop {
+    public struct SetOracleProvider has copy, drop {
         config: address,
         feed_id: address,
         is_primary: bool,
@@ -120,14 +120,14 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         before_provider: 0x1::ascii::String,
     }
     
-    struct OracleProviderConfigCreated has copy, drop {
+    public struct OracleProviderConfigCreated has copy, drop {
         config: address,
         feed_id: address,
         provider: 0x1::ascii::String,
         pair_id: vector<u8>,
     }
     
-    struct OracleProviderConfigSetPairId has copy, drop {
+    public struct OracleProviderConfigSetPairId has copy, drop {
         config: address,
         feed_id: address,
         provider: 0x1::ascii::String,
@@ -135,7 +135,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         before_value: vector<u8>,
     }
     
-    struct OracleProviderConfigSetEnable has copy, drop {
+    public struct OracleProviderConfigSetEnable has copy, drop {
         config: address,
         feed_id: address,
         provider: 0x1::ascii::String,
@@ -143,19 +143,19 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         before_value: bool,
     }
     
-    struct PriceFeedSetHistoricalPriceTTL has copy, drop {
+    public struct PriceFeedSetHistoricalPriceTTL has copy, drop {
         config: address,
         feed_id: address,
         value: u64,
         before_value: u64,
     }
     
-    struct PriceFeedDiffThreshold2TimerUpdated has copy, drop {
+    public struct PriceFeedDiffThreshold2TimerUpdated has copy, drop {
         feed_id: address,
         updated_at: u64,
     }
     
-    struct PriceFeedDiffThreshold2TimerReset has copy, drop {
+    public struct PriceFeedDiffThreshold2TimerReset has copy, drop {
         feed_id: address,
         started_at: u64,
     }
@@ -168,7 +168,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::is_oracle_provider_config_enable(arg0)
     }
     
-    public(friend) fun new_oracle_provider_config(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, arg3: vector<u8>, arg4: bool) {
+    public(package) fun new_oracle_provider_config(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, arg3: vector<u8>, arg4: bool) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         assert!(!0x2::table::contains<0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProviderConfig>(&v0.oracle_provider_configs, arg2), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::oracle_config_already_exists());
@@ -327,7 +327,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::object::uid_to_address(&arg0.id)
     }
     
-    public(friend) fun get_price_feed_mut(arg0: &mut OracleConfig, arg1: address) : &mut PriceFeed {
+    public(package) fun get_price_feed_mut(arg0: &mut OracleConfig, arg1: address) : &mut PriceFeed {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1)
     }
@@ -369,16 +369,17 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
     }
     
     public fun is_price_feed_exists<T0>(arg0: &OracleConfig, arg1: u8) : bool {
-        let v0 = 0;
-        while (v0 < 0x1::vector::length<address>(&arg0.vec_feeds)) {
-            let v1 = 0x2::table::borrow<address, PriceFeed>(&arg0.feeds, *0x1::vector::borrow<address>(&arg0.vec_feeds, v0));
-            if (v1.coin_type == 0x1::type_name::into_string(0x1::type_name::get<T0>())) {
+        let mut i = 0;
+        let len = 0x1::vector::length<address>(&arg0.vec_feeds);
+        while (i < len) {
+            let v1 = 0x2::table::borrow<address, PriceFeed>(&arg0.feeds, *0x1::vector::borrow<address>(&arg0.vec_feeds, i));
+            if (v1.coin_type == 0x1::type_name::into_string(0x1::type_name::with_defining_ids<T0>())) {
                 return true
             };
             if (v1.oracle_id == arg1) {
                 return true
             };
-            v0 = v0 + 1;
+            i = i + 1;
         };
         false
     }
@@ -394,14 +395,15 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::is_oracle_provider_config_enable(0x2::table::borrow<0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProviderConfig>(&arg0.oracle_provider_configs, *v0))
     }
     
-    public(friend) fun keep_history_update(arg0: &mut PriceFeed, arg1: u256, arg2: u64) {
+    public(package) fun keep_history_update(arg0: &mut PriceFeed, arg1: u256, arg2: u64) {
         let v0 = &mut arg0.history;
         v0.price = arg1;
         v0.updated_time = arg2;
     }
     
-    public(friend) fun new_config(arg0: &mut 0x2::tx_context::TxContext) {
+    public(package) fun new_config(arg0: &mut 0x2::tx_context::TxContext) {
         let v0 = 0x2::object::new(arg0);
+        let id_addr = 0x2::object::uid_to_address(&v0);
         let v1 = OracleConfig{
             id        : v0, 
             version   : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version(), 
@@ -412,12 +414,12 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::transfer::share_object<OracleConfig>(v1);
         let v2 = ConfigCreated{
             sender : 0x2::tx_context::sender(arg0), 
-            id     : 0x2::object::uid_to_address(&v0),
+            id     : id_addr,
         };
         0x2::event::emit<ConfigCreated>(v2);
     }
     
-    public(friend) fun new_price_feed<T0>(arg0: &mut OracleConfig, arg1: u8, arg2: u64, arg3: u64, arg4: u64, arg5: u64, arg6: u64, arg7: u256, arg8: u256, arg9: u64, arg10: &mut 0x2::tx_context::TxContext) {
+    public(package) fun new_price_feed<T0>(arg0: &mut OracleConfig, arg1: u8, arg2: u64, arg3: u64, arg4: u64, arg5: u64, arg6: u64, arg7: u256, arg8: u256, arg9: u64, arg10: &mut 0x2::tx_context::TxContext) {
         assert!(!is_price_feed_exists<T0>(arg0, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_already_exists());
         let v0 = 0x2::object::new(arg10);
         let v1 = 0x2::object::uid_to_address(&v0);
@@ -454,7 +456,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedCreated>(v4);
     }
     
-    public(friend) fun reset_diff_threshold2_timer(arg0: &mut PriceFeed) {
+    public(package) fun reset_diff_threshold2_timer(arg0: &mut PriceFeed) {
         let v0 = arg0.diff_threshold2_timer;
         if (v0 == 0) {
             return
@@ -467,7 +469,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedDiffThreshold2TimerReset>(v1);
     }
     
-    public(friend) fun set_enable_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: bool) {
+    public(package) fun set_enable_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: bool) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         v0.enable = arg2;
@@ -480,7 +482,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetEnable>(v1);
     }
     
-    public(friend) fun set_historical_price_ttl_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
+    public(package) fun set_historical_price_ttl_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         v0.historical_price_ttl = arg2;
@@ -493,7 +495,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetHistoricalPriceTTL>(v1);
     }
     
-    public(friend) fun set_max_duration_within_thresholds_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
+    public(package) fun set_max_duration_within_thresholds_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         v0.max_duration_within_thresholds = arg2;
@@ -506,7 +508,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetMaxDurationWithinThresholds>(v1);
     }
     
-    public(friend) fun set_max_timestamp_diff_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
+    public(package) fun set_max_timestamp_diff_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         v0.max_timestamp_diff = arg2;
@@ -519,7 +521,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetMaxTimestampDiff>(v1);
     }
     
-    public(friend) fun set_maximum_allowed_span_percentage_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
+    public(package) fun set_maximum_allowed_span_percentage_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         v0.maximum_allowed_span_percentage = arg2;
@@ -532,7 +534,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetMaximumAllowedSpanPercentage>(v1);
     }
     
-    public(friend) fun set_maximum_effective_price_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u256) {
+    public(package) fun set_maximum_effective_price_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u256) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         assert!(arg2 >= v0.minimum_effective_price, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::invalid_value());
@@ -546,7 +548,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetMaximumEffectivePrice>(v1);
     }
     
-    public(friend) fun set_minimum_effective_price_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u256) {
+    public(package) fun set_minimum_effective_price_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u256) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         if (v0.maximum_effective_price > 0) {
@@ -562,14 +564,15 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetMinimumEffectivePrice>(v1);
     }
     
-    public(friend) fun set_oracle_id_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u8) {
+    public(package) fun set_oracle_id_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u8) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
-        let v0 = 0;
-        while (v0 < 0x1::vector::length<address>(&arg0.vec_feeds)) {
-            if (0x2::table::borrow<address, PriceFeed>(&arg0.feeds, *0x1::vector::borrow<address>(&arg0.vec_feeds, v0)).oracle_id == arg2) {
+        let mut i = 0;
+        let len = 0x1::vector::length<address>(&arg0.vec_feeds);
+        while (i < len) {
+            if (0x2::table::borrow<address, PriceFeed>(&arg0.feeds, *0x1::vector::borrow<address>(&arg0.vec_feeds, i)).oracle_id == arg2) {
                 abort 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_already_exists()
             };
-            v0 = v0 + 1;
+            i = i + 1;
         };
         let v1 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         v1.oracle_id = arg2;
@@ -582,7 +585,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetOracleId>(v2);
     }
     
-    public(friend) fun set_oracle_provider_config_enable(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, arg3: bool) {
+    public(package) fun set_oracle_provider_config_enable(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, arg3: bool) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         assert!(0x2::table::contains<0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProviderConfig>(&v0.oracle_provider_configs, arg2), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::oracle_provider_config_not_found());
@@ -599,7 +602,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<OracleProviderConfigSetEnable>(v2);
     }
     
-    public(friend) fun set_oracle_provider_config_pair_id(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, arg3: vector<u8>) {
+    public(package) fun set_oracle_provider_config_pair_id(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, arg3: vector<u8>) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         assert!(0x2::table::contains<0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProviderConfig>(&v0.oracle_provider_configs, arg2), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::oracle_provider_config_not_found());
@@ -615,7 +618,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<OracleProviderConfigSetPairId>(v2);
     }
     
-    public(friend) fun set_pause(arg0: &mut OracleConfig, arg1: bool) {
+    public(package) fun set_pause(arg0: &mut OracleConfig, arg1: bool) {
         arg0.paused = arg1;
         let v0 = ConfigSetPaused{
             config       : 0x2::object::uid_to_address(&arg0.id), 
@@ -625,7 +628,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<ConfigSetPaused>(v0);
     }
     
-    public(friend) fun set_price_diff_threshold1_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
+    public(package) fun set_price_diff_threshold1_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         if (v0.price_diff_threshold2 > 0) {
@@ -641,7 +644,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetPriceDiffThreshold1>(v1);
     }
     
-    public(friend) fun set_price_diff_threshold2_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
+    public(package) fun set_price_diff_threshold2_to_price_feed(arg0: &mut OracleConfig, arg1: address, arg2: u64) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         assert!(arg2 >= v0.price_diff_threshold1, 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::invalid_value());
@@ -655,7 +658,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedSetPriceDiffThreshold2>(v1);
     }
     
-    public(friend) fun set_primary_oracle_provider(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider) {
+    public(package) fun set_primary_oracle_provider(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         if (v0.primary == arg2) {
@@ -675,7 +678,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<SetOracleProvider>(v2);
     }
     
-    public(friend) fun set_secondary_oracle_provider(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider) {
+    public(package) fun set_secondary_oracle_provider(arg0: &mut OracleConfig, arg1: address, arg2: 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::OracleProvider) {
         assert!(0x2::table::contains<address, PriceFeed>(&arg0.feeds, arg1), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::price_feed_not_found());
         let v0 = 0x2::table::borrow_mut<address, PriceFeed>(&mut arg0.feeds, arg1);
         if (v0.secondary == arg2) {
@@ -696,7 +699,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<SetOracleProvider>(v2);
     }
     
-    public(friend) fun start_or_continue_diff_threshold2_timer(arg0: &mut PriceFeed, arg1: u64) {
+    public(package) fun start_or_continue_diff_threshold2_timer(arg0: &mut PriceFeed, arg1: u64) {
         if (arg0.diff_threshold2_timer > 0) {
             return
         };
@@ -708,7 +711,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::confi
         0x2::event::emit<PriceFeedDiffThreshold2TimerUpdated>(v0);
     }
     
-    public(friend) fun version_migrate(arg0: &mut OracleConfig) {
+    public(package) fun version_migrate(arg0: &mut OracleConfig) {
         assert!(arg0.version <= 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version(), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::not_available_version());
         arg0.version = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version();
     }
