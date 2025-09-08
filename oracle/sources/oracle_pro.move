@@ -1,5 +1,5 @@
 module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_pro {
-    struct PriceRegulation has copy, drop {
+    public struct PriceRegulation has copy, drop {
         level: u8,
         config_address: address,
         feed_address: address,
@@ -12,7 +12,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         secondary_price: u256,
     }
     
-    struct InvalidOraclePrice has copy, drop {
+    public struct InvalidOraclePrice has copy, drop {
         config_address: address,
         feed_address: address,
         provider: 0x1::ascii::String,
@@ -26,8 +26,8 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         historical_updated_time: u64,
     }
     
-    struct OracleUnavailable has copy, drop {
-        type: u8,
+    public struct OracleUnavailable has copy, drop {
+        level_type: u8,
         config_address: address,
         feed_address: address,
         provider: 0x1::ascii::String,
@@ -67,18 +67,18 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
         };
         let (v8, v9) = get_price_from_adaptor(v7, v5, arg3, arg4);
         let v10 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::strategy::is_oracle_price_fresh(v2, v9, v3);
-        let v11 = false;
+        let mut v11 = false;
         let v12 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::is_secondary_oracle_available(v1);
-        let v13 = 0;
-        let v14 = 0;
+        let mut v13 = 0;
+        let mut v14 = 0;
         if (v12) {
             let (v15, v16) = get_price_from_adaptor(0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_secondary_source_config(v1), v5, arg3, arg4);
             v14 = v16;
             v13 = v15;
             v11 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::strategy::is_oracle_price_fresh(v2, v16, v3);
         };
-        let v17 = false;
-        let v18 = v8;
+        let mut v17 = false;
+        let mut v18 = v8;
         if (v10 && v11) {
             let v19 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_price_diff_threshold1_from_feed(v1);
             let v20 = 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_price_diff_threshold2_from_feed(v1);
@@ -108,7 +108,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
             if (v10) {
                 if (v12) {
                     let v25 = OracleUnavailable{
-                        type           : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::secondary_type(), 
+                        level_type     : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::secondary_type(), 
                         config_address : v0, 
                         feed_address   : arg5, 
                         provider       : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::to_string(0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::config::get_secondary_oracle_provider(v1)), 
@@ -120,7 +120,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
             } else {
                 if (v11) {
                     let v26 = OracleUnavailable{
-                        type           : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::primary_type(), 
+                        level_type     : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::primary_type(), 
                         config_address : v0, 
                         feed_address   : arg5, 
                         provider       : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::to_string(v6), 
@@ -131,7 +131,7 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
                     v18 = v13;
                 } else {
                     let v27 = OracleUnavailable{
-                        type           : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::both_type(), 
+                        level_type     : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_constants::both_type(), 
                         config_address : v0, 
                         feed_address   : arg5, 
                         provider       : 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_provider::to_string(v6), 
