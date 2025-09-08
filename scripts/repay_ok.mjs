@@ -27,7 +27,13 @@ async function main() {
   const remaining = tx.moveCall({
     target: `${params.pkgLending}::lending::flash_repay_with_ctx`,
     typeArguments: [params.coinType],
-    arguments: [tx.object(params.clockId), tx.object(params.storageId), tx.object(params.poolId), receipt, balance],
+    arguments: [
+      tx.object(params.clockId),
+      tx.object(params.storageId),
+      tx.object(params.poolId),
+      receipt,
+      balance,
+    ],
   });
 
   // Send leftover, if any
