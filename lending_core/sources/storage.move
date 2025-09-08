@@ -166,6 +166,54 @@ module 0xd899cf7d2b5db716bd2cf55599fb0d5ee38a3061e7b6bb6eebf73fa5bc4c81ca::stora
     public fun get_reserve_for_testing(arg0: &Storage, arg1: u8) : &ReserveData {
         0x2::table::borrow<u8, ReserveData>(&arg0.reserves, arg1)
     }
+
+    #[test_only]
+    public fun new_storage_for_testing(ctx: &mut 0x2::tx_context::TxContext): Storage {
+        Storage{
+            id: 0x2::object::new(ctx),
+            version: 0xd899cf7d2b5db716bd2cf55599fb0d5ee38a3061e7b6bb6eebf73fa5bc4c81ca::version::this_version(),
+            paused: false,
+            reserves: 0x2::table::new<u8, ReserveData>(ctx),
+            reserves_count: 0,
+            users: 0x1::vector::empty<address>(),
+            user_info: 0x2::table::new<address, UserInfo>(ctx),
+        }
+    }
+
+    #[test_only]
+    public fun add_reserve_min_for_testing<T0>(s: &mut Storage, oracle_id: u8, ltv: u256, threshold: u256, bonus: u256) : u8 {
+        let id = s.reserves_count;
+        let supply = TokenBalance{ user_state: 0x2::table::new<address, u256>(&mut 0x2::tx_context::dummy()), total_supply: 0 };
+        let borrow = TokenBalance{ user_state: 0x2::table::new<address, u256>(&mut 0x2::tx_context::dummy()), total_supply: 0 };
+        let brf = BorrowRateFactors{ base_rate: 0, multiplier: 0, jump_rate_multiplier: 0, reserve_factor: 0, optimal_utilization: 0 };
+        let lf = LiquidationFactors{ ratio: ltv, bonus: bonus, threshold: threshold };
+        let rd = ReserveData{
+            id,
+            oracle_id,
+            coin_type: 0x1::type_name::into_string(0x1::type_name::get<T0>()),
+            is_isolated: false,
+            supply_cap_ceiling: 0x2::address::max(),
+            borrow_cap_ceiling: 0x2::address::max(),
+            current_supply_rate: 0,
+            current_borrow_rate: 0,
+            current_supply_index: 0xd899cf7d2b5db716bd2cf55599fb0d5ee38a3061e7b6bb6eebf73fa5bc4c81ca::ray_math::ray(),
+            current_borrow_index: 0xd899cf7d2b5db716bd2cf55599fb0d5ee38a3061e7b6bb6eebf73fa5bc4c81ca::ray_math::ray(),
+            supply_balance: supply,
+            borrow_balance: borrow,
+            last_update_timestamp: 0,
+            ltv,
+            treasury_factor: 0,
+            treasury_balance: 0,
+            borrow_rate_factors: brf,
+            liquidation_factors: lf,
+            reserve_field_a: 0,
+            reserve_field_b: 0,
+            reserve_field_c: 0,
+        };
+        0x2::table::add<u8, ReserveData>(&mut s.reserves, id, rd);
+        s.reserves_count = id + 1;
+        id
+    }
     
     public fun get_reserves_count(arg0: &Storage) : u8 {
         arg0.reserves_count
