@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/Cherlyn75338/navi-contract-sui#readme",
   "devDependencies": {
-    "@mysten/sui.js": "^0.53.0",
+    "@mysten/sui.js": "^0.54.1",
     "@types/node": "^24.3.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
