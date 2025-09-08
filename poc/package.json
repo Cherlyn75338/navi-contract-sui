@@ -1,0 +1,21 @@
+{
+  "name": "sui-poc",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "track:a": "npm run build && node dist/trackA.js",
+    "track:b": "npm run build && node dist/trackB.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@mysten/sui.js": "0.54.1",
+    "@types/node": "20.11.24",
+    "ts-node": "10.9.2",
+    "typescript": "5.5.4"
+  }
+}
