@@ -41,8 +41,35 @@ async function roundtripTest(fromDec: number, upto: number) {
       const count = drifts.length;
       const sample = drifts.slice(0, 5).map((r) => ({ x: r.x, n: r.n.toString(), u: r.u.toString() }));
       console.log(JSON.stringify({ decimals: d, count, sample }, null, 2));
+      const b = await roundtripBoundary(d);
+      const bcount = b.length;
+      const bsample = b.slice(0, 5).map((r) => ({ x: r.x.toString(), n: r.n.toString(), u: r.u.toString() }));
+      console.log(JSON.stringify({ decimals_boundary: d, count: bcount, sample: bsample }, null, 2));
     } catch (e) {
       console.error("error for decimals", d, e);
     }
   }
 })();
+
+async function roundtripBoundary(fromDec: number) {
+  const drifts: Array<{ x: bigint; n: bigint; u: bigint } > = [];
+  const pow10: bigint[] = [];
+  for (let k = 0; k <= 19; k++) {
+    const v = BigInt(10) ** BigInt(k);
+    pow10.push(v);
+  }
+  const candidates = new Set<bigint>();
+  for (const v of pow10) {
+    if (v > 0n) candidates.add(v - 1n);
+    candidates.add(v);
+    candidates.add(v + 1n);
+  }
+  for (const x of candidates) {
+    if (x <= 0n) continue;
+    if (x > 18446744073709551615n) continue; // u64 max
+    const n = await convert(PKG_POOL, x, fromDec, 9);
+    const u = await convert(PKG_POOL, n, 9, fromDec);
+    if (u !== x) drifts.push({ x, n, u });
+  }
+  return drifts;
+}
