@@ -83,6 +83,11 @@ module 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracl
             price_oracles: 0x2::table::new<u8, Price>(ctx),
         }
     }
+
+    #[test_only]
+    public fun share_price_oracle_for_testing(po: PriceOracle) {
+        0x2::transfer::share_object<PriceOracle>(po)
+    }
     
     public(package) fun oracle_version_migrate(arg0: &OracleAdminCap, arg1: &mut PriceOracle) {
         assert!(arg1.version <= 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_version::this_version(), 0xca441b44943c16be0e6e23c5a955bb971537ea3289ae8016fbf33fffe1fd210f::oracle_error::not_available_version());
