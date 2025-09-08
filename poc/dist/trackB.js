@@ -21,7 +21,8 @@ const ENV = {
     INCENTIVE_ID: process.env.POC_INCENTIVE_ID || '',
     INCV2_ID: process.env.POC_INCV2_ID || '',
 };
-const client = new SuiClient({ url: getFullnodeUrl('mainnet') });
+const rpcUrl = process.env.SUI_RPC_URL || getFullnodeUrl('mainnet');
+const client = new SuiClient({ url: rpcUrl });
 async function getModule(pkg, module) {
     try {
         const mod = await client.getNormalizedMoveModule({ package: pkg, module });
@@ -255,27 +256,46 @@ async function main() {
         ];
         for (const fn of fnNames) {
             try {
-                const resp = await client.queryTransactionBlocks({
-                    filter: { MoveFunction: { package: aggPkg, module: ENV.LENDING_MODULE, function: fn } },
-                    options: { showObjectChanges: true },
-                    limit: 100,
-                    order: 'descending',
-                });
-                for (const tx of resp.data || []) {
-                    const changes = tx.objectChanges || [];
-                    for (const ch of changes) {
-                        if ((ch.type === 'created' || ch.type === 'mutated') && typeof ch.objectType === 'string') {
-                            const ty = ch.objectType;
-                            if (poolPkg && ty.startsWith(`${poolPkg}::pool::Pool<`))
-                                foundPools.add(ch.objectId);
-                            if (storagePkg && ty === `${storagePkg}::storage::Storage`)
-                                foundStorages.add(ch.objectId);
-                            if (incentivePkg && ty === `${incentivePkg}::incentive::Incentive`)
-                                foundInc.add(ch.objectId);
-                            if (incentivePkg && ty === `${incentivePkg}::incentive_v2::Incentive`)
-                                foundIncV2.add(ch.objectId);
+                let cursor = null;
+                const maxPages = 200;
+                for (let i = 0; i < maxPages; i++) {
+                    const resp = await client.queryTransactionBlocks({
+                        filter: { MoveFunction: { package: aggPkg, module: ENV.LENDING_MODULE, function: fn } },
+                        options: { showObjectChanges: true, showInput: true },
+                        limit: 100,
+                        order: 'descending',
+                        cursor,
+                    });
+                    for (const tx of resp.data || []) {
+                        // Inspect input objects and fetch their types
+                        const inputs = (tx.transaction?.data?.transaction?.inputs || []);
+                        const objIds = [];
+                        for (const inp of inputs) {
+                            if (inp.type === 'object' && typeof inp.objectId === 'string')
+                                objIds.push(inp.objectId);
+                        }
+                        if (objIds.length > 0) {
+                            const objs = await client.multiGetObjects({ ids: objIds, options: { showType: true } });
+                            for (const o of objs) {
+                                const ty = o.data?.type;
+                                if (!ty)
+                                    continue;
+                                if (poolPkg && ty.startsWith(`${poolPkg}::pool::Pool<`))
+                                    foundPools.add(o.data.objectId);
+                                if (storagePkg && ty === `${storagePkg}::storage::Storage`)
+                                    foundStorages.add(o.data.objectId);
+                                if (incentivePkg && ty === `${incentivePkg}::incentive::Incentive`)
+                                    foundInc.add(o.data.objectId);
+                                if (incentivePkg && ty === `${incentivePkg}::incentive_v2::Incentive`)
+                                    foundIncV2.add(o.data.objectId);
+                            }
                         }
                     }
+                    if (!resp.hasNextPage || !resp.nextCursor)
+                        break;
+                    cursor = resp.nextCursor;
+                    if (foundPools.size >= 30 && foundStorages.size >= 5)
+                        break;
                 }
             }
             catch { }

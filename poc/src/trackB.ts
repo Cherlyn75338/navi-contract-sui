@@ -258,23 +258,38 @@ async function main() {
 
     for (const fn of fnNames) {
       try {
-        const resp = await client.queryTransactionBlocks({
-          filter: { MoveFunction: { package: aggPkg, module: ENV.LENDING_MODULE, function: fn } } as any,
-          options: { showObjectChanges: true },
-          limit: 100,
-          order: 'descending',
-        });
-        for (const tx of (resp as AnyRecord).data || []) {
-          const changes: any[] = tx.objectChanges || [];
-          for (const ch of changes) {
-            if ((ch.type === 'created' || ch.type === 'mutated') && typeof ch.objectType === 'string') {
-              const ty = ch.objectType as string;
-              if (poolPkg && ty.startsWith(`${poolPkg}::pool::Pool<`)) foundPools.add(ch.objectId);
-              if (storagePkg && ty === `${storagePkg}::storage::Storage`) foundStorages.add(ch.objectId);
-              if (incentivePkg && ty === `${incentivePkg}::incentive::Incentive`) foundInc.add(ch.objectId);
-              if (incentivePkg && ty === `${incentivePkg}::incentive_v2::Incentive`) foundIncV2.add(ch.objectId);
+        let cursor: string | null = null;
+        const maxPages = 200;
+        for (let i = 0; i < maxPages; i++) {
+          const resp = await client.queryTransactionBlocks({
+            filter: { MoveFunction: { package: aggPkg, module: ENV.LENDING_MODULE, function: fn } } as any,
+            options: { showObjectChanges: true, showInput: true },
+            limit: 100,
+            order: 'descending',
+            cursor,
+          });
+          for (const tx of (resp as AnyRecord).data || []) {
+            // Inspect input objects and fetch their types
+            const inputs: any[] = (tx.transaction?.data?.transaction?.inputs || []) as any[];
+            const objIds: string[] = [];
+            for (const inp of inputs) {
+              if (inp.type === 'object' && typeof inp.objectId === 'string') objIds.push(inp.objectId);
+            }
+            if (objIds.length > 0) {
+              const objs = await client.multiGetObjects({ ids: objIds, options: { showType: true } } as any);
+              for (const o of objs) {
+                const ty = o.data?.type as string | undefined;
+                if (!ty) continue;
+                if (poolPkg && ty.startsWith(`${poolPkg}::pool::Pool<`)) foundPools.add(o.data!.objectId);
+                if (storagePkg && ty === `${storagePkg}::storage::Storage`) foundStorages.add(o.data!.objectId);
+                if (incentivePkg && ty === `${incentivePkg}::incentive::Incentive`) foundInc.add(o.data!.objectId);
+                if (incentivePkg && ty === `${incentivePkg}::incentive_v2::Incentive`) foundIncV2.add(o.data!.objectId);
+              }
             }
           }
+          if (!(resp as AnyRecord).hasNextPage || !(resp as AnyRecord).nextCursor) break;
+          cursor = (resp as AnyRecord).nextCursor;
+          if (foundPools.size >= 30 && foundStorages.size >= 5) break;
         }
       } catch {}
     }
