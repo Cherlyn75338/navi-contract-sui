@@ -13,8 +13,8 @@ async function rpc(method, params) {
 }
 
 async function queryEvents(filter, cursor, limit) {
-  // suix_queryEvents expects params: [ { filter: <filter>, cursor, limit } ]
-  return rpc('suix_queryEvents', [{ filter, cursor: cursor ?? null, limit: limit ?? 50 }]);
+  // suix_queryEvents expects params: [ EventFilter, cursor, limit ]
+  return rpc('suix_queryEvents', [filter, cursor ?? null, limit ?? 50]);
 }
 
 async function getObject(id) {
@@ -30,19 +30,23 @@ async function discover(limit = 2000) {
   const poolIds = new Set();
   let cursor = null;
   let fetched = 0;
-  const filter = { MoveModule: { package: POOL_PACKAGE, module: 'pool' } };
+  // Filter events emitted by the pool and storage modules in this package
+  const poolFilter = { MoveEventModule: { package: POOL_PACKAGE, module: 'pool' } };
+  const storageFilter = { MoveEventModule: { package: POOL_PACKAGE, module: 'storage' } };
   while (fetched < limit) {
-    const res = await queryEvents(filter, cursor, 50);
-    for (const ev of res.data) {
+    const res1 = await queryEvents(poolFilter, cursor, 50);
+    const res2 = await queryEvents(storageFilter, cursor, 50);
+    const data = [...(res1.data || []), ...(res2.data || [])];
+    for (const ev of data) {
       if (typeof ev.type !== 'string') continue;
-      if (ev.type.endsWith('::pool::PoolWithdrawReserve')) {
+      if (ev.type.endsWith('::pool::PoolWithdrawReserve') || ev.type.endsWith('::storage::WithdrawTreasuryEvent')) {
         const pid = ev.parsedJson?.poolId;
         if (pid) poolIds.add(pid);
       }
     }
-    fetched += res.data.length;
-    if (!res.hasNextPage || !res.nextCursor) break;
-    cursor = res.nextCursor;
+    fetched += data.length;
+    cursor = res1.nextCursor || res2.nextCursor || null;
+    if (!(res1.hasNextPage || res2.hasNextPage)) break;
   }
 
   const groups = new Map();
